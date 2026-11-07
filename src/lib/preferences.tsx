@@ -1,3 +1,4 @@
+import { companyName } from './brand'
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { zh, en } from './i18n'
@@ -47,7 +48,7 @@ export function PreferenceProvider({ children }: { children: ReactNode }) {
       root.style.setProperty('--sidebar-primary', c[dark ? 'dark' : 'light'])
       root.style.setProperty('--chart-1', c[dark ? 'dark' : 'light'])
       root.dataset.accent = prefs.accent
-      document.title = prefs.locale === 'zh' ? 'Tradevia · 经销商运营工作台' : 'Tradevia · Distribution workspace'
+      document.title = prefs.locale === 'zh' ? `${companyName} · 经销商运营工作台` : `${companyName} · Distribution workspace`
     }
     apply()
     media.addEventListener('change', apply)

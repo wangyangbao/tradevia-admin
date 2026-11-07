@@ -1,3 +1,4 @@
+import { companyName } from './brand'
 export const visitZh = {
   visitRoutes: '拜访路线', description: '安排每一次到店，让客户拜访更有计划。',
   totalRoutes: '拜访路线', enabledRoutes: '启用中', coveredOutlets: '已分配门店', unassignedOutlets: '待分配门店',
@@ -42,7 +43,7 @@ export const visitZh = {
   nameLength: '最多 40 个字符', zeroSelection: '保存后，此路线将不包含任何门店。',
   filterHint: '统计随所属大区变化', stepPlan: '设置路线', stepAssign: '分配门店', stepSave: '保存安排',
   channel: '门店类型', allChannels: '全部类型', regionChange: '所属大区由执行人确定。',
-  exportFilename: 'Tradevia-visit-routes', affectedOutlets: '受影响门店',
+  exportFilename: `${companyName}-visit-routes`, affectedOutlets: '受影响门店',
 } as const
 
 export type VisitTextKey = keyof typeof visitZh
@@ -90,5 +91,5 @@ export const visitEn: Record<VisitTextKey, string> = {
   nameLength: 'Up to 40 characters', zeroSelection: 'This route will have no outlets after saving.',
   filterHint: 'Summary follows the region filter', stepPlan: 'Configure route', stepAssign: 'Assign outlets', stepSave: 'Save plan',
   channel: 'Channel', allChannels: 'All channels', regionChange: 'Region follows the selected representative.',
-  exportFilename: 'Tradevia-visit-routes', affectedOutlets: 'Affected outlets',
+  exportFilename: `${companyName}-visit-routes`, affectedOutlets: 'Affected outlets',
 }

@@ -1,3 +1,4 @@
+import { companyName } from '@/lib/brand'
 import { useState } from 'react'
 import { ArrowDownToLine, ArrowUpRight, Boxes, Building2, Check, ChevronRight, CreditCard, Package, Search, Store, Truck, Users, Wallet } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -64,7 +65,7 @@ export function RecordsPage({ page, region, orders, onOrder }: { page: Exclude<P
     if (page === 'inventory') { headers = [t('sku'), t('product'), t('warehouse'), t('available'), t('reserved'), t('expiry')]; rows = filteredProducts.map(p => [p.id, t(p.name), t(p.warehouse), p.available, p.reserved, p.expiry]) }
     if (page === 'receivables') { headers = [t('receivableNo'), t('outlet'), t('receivableAmount'), t('received'), t('balance'), t('dueDate')]; rows = filteredReceivables.map(r => [r.id, r.outlet, r.amount, r.received, r.amount - r.received, r.due]) }
     if (!rows.length) { toast.info(t('exportEmpty')); return }
-    exportCsv(headers, rows, `Tradevia-${page}-2026-11-07.csv`); toast.success(t('exportDone'))
+    exportCsv(headers, rows, `${companyName}-${page}-2026-11-07.csv`); toast.success(t('exportDone'))
   }
   const reset = () => { setQuery(''); setStatus('all') }
   return <div className="records-page page-enter"><div className="small-stats-grid">{stats.map(s => <SmallStat key={s.label} {...s} />)}</div><Card className="list-card"><div className="list-toolbar"><div className="list-heading"><h2>{t(page)}</h2><span className="record-count">{count}</span></div><div className="list-tools"><div className="list-search"><Search size={15} /><Input aria-label={t('searchHint')} placeholder={t('searchHint')} value={query} onChange={e => setQuery(e.target.value)} /></div>{(page === 'orders' || page === 'receivables') && <Select value={status} onValueChange={setStatus}><SelectTrigger className="status-select" aria-label={t('status')}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t('allStatuses')}</SelectItem>{(page === 'orders' ? ['pending', 'delivering', 'delivered', 'cancelled'] : ['unpaid', 'partial', 'overdue', 'paid']).map(s => <SelectItem key={s} value={s}>{t(s as TextKey)}</SelectItem>)}</SelectContent></Select>}<Button variant="outline" onClick={handleExport}><ArrowDownToLine size={15} /><span>{t('export')}</span></Button></div></div>

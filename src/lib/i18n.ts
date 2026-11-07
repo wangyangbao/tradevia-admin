@@ -1,3 +1,4 @@
+import { companyName } from './brand'
 export const zh = {
   loading: '正在加载工作台…',
   workspace: '菲律宾业务中心', demo: '演示环境', demoData: '以下均为演示数据',
@@ -53,8 +54,8 @@ export const zh = {
   demoNotice: '当前为前端演示，业务数据为示例，未连接后端或数据库。',
   noticeTitle: '工作动态', noticeOne: '3 笔订单等待审核', noticeOneDetail: '马尼拉大区 · 销售订单',
   noticeTwo: '2 个商品库存偏低', noticeTwoDetail: '查看库存，及时安排补货',
-  noticeThree: '欢迎使用 Tradevia', noticeThreeDetail: '开始探索你的经销商运营工作台',
-  unread: '条未读', helpTitle: '欢迎体验 Tradevia',
+  noticeThree: `欢迎使用${companyName}`, noticeThreeDetail: '开始探索你的经销商运营工作台',
+  unread: '条未读', helpTitle: `欢迎体验${companyName}`,
   helpText: '通过左侧菜单浏览各业务页面。右上角可切换中英文、主题色和明暗模式。列表支持搜索与筛选，订单可查看详情或在当前会话中新建。',
   helpFooter: '外观偏好和拜访路线配置保存在当前浏览器；演示订单刷新后恢复。', understood: '知道了',
   orderDetails: '订单详情', orderDetailsHint: '演示订单的商品、金额与履约信息。',
@@ -131,8 +132,8 @@ export const en: Record<TextKey, string> = {
   demoNotice: 'Frontend demo with sample data. No backend or database is connected.',
   noticeTitle: 'Activity', noticeOne: '3 orders awaiting approval', noticeOneDetail: 'Metro Manila · Sales orders',
   noticeTwo: '2 products running low', noticeTwoDetail: 'Check inventory and plan your next restock',
-  noticeThree: 'Welcome to Tradevia', noticeThreeDetail: 'Get to know your distribution workspace',
-  unread: 'unread', helpTitle: 'A quick tour of Tradevia',
+  noticeThree: `Welcome to ${companyName}`, noticeThreeDetail: 'Get to know your distribution workspace',
+  unread: 'unread', helpTitle: `A quick tour of ${companyName}`,
   helpText: 'Use the sidebar to explore your workspace. Change language, accent color, or display mode at the top right. Search and filter lists, inspect orders, or add a sample order for this session.',
   helpFooter: 'Appearance and visit route plans are saved in this browser. Reloading restores sample orders.', understood: 'Got it',
   orderDetails: 'Order details', orderDetailsHint: 'Products, totals, and delivery information for this sample order.',
