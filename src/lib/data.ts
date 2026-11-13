@@ -2,9 +2,9 @@ import type { TextKey } from './i18n'
 
 export type Region = 'manila' | 'northLuzon' | 'visayas' | 'mindanao'
 export const regions: Region[] = ['manila', 'northLuzon', 'visayas', 'mindanao']
-export type Page = 'overview' | 'orders' | 'outlets' | 'distributors' | 'inventory' | 'receivables' | 'settings' | 'visitRoutes'
+export type Page = import('./sales-types').SalesPage | import('./fieldwork').FieldPage | import('./basic-data').BasicPage | 'products' | 'priceLists' | 'overview' | 'orders' | 'outlets' | 'distributors' | 'inventory' | 'receivables' | 'settings' | 'visitRoutes' | 'businessUnits' | 'departments' | 'personnel'
 export type OrderStatus = 'pending' | 'delivering' | 'delivered' | 'cancelled'
-export type Order = { id: string; outlet: string; distributor: string; region: Region; amount: number; status: OrderStatus; date: string; product: TextKey; quantity: number; price: number; payment: 'cash' | 'credit' | 'wallet' }
+export type Order = { id: string; outlet: string; distributor: string; region: Region; amount: number; status: OrderStatus; date: string; product: TextKey; quantity: number; price: number; payment: 'cash' | 'credit' | 'wallet'; snapshot?: import('./catalog').PriceSnapshot }
 
 export const initialOrders: Order[] = [
   { id: 'SO-261107-0086', outlet: 'Aling Nena Store', distributor: 'Metro Manila Trading', region: 'manila', amount: 8640, status: 'pending', date: '2026-11-07', product: 'vanilla', quantity: 288, price: 30, payment: 'credit' },

@@ -5,9 +5,9 @@ export const authStorageKeys = {
   session: 'tradevia-demo-tab-session-v1',
 } as const
 
-export type AuthUser = { id: string; name: string; email: string; demo: boolean }
+export type AuthUser = { id: string; name: string; email: string; demo: boolean; passwordChangeRequired?: boolean; credentialVersion?: number }
 export type AuthSession = { user: AuthUser; expiresAt: number }
-type Account = Omit<AuthUser, 'demo'> & { salt: string; passwordHash: string }
+type Account = Omit<AuthUser, 'demo'> & { salt: string; passwordHash: string; phone?: string; enabled?: boolean }
 export type AuthErrorCode = 'invalidName' | 'invalidEmail' | 'invalidPassword' | 'emailTaken' | 'invalidCredentials' | 'storageUnavailable' | 'storageCorrupt' | 'cryptoUnavailable'
 export class AuthError extends Error {
   code: AuthErrorCode
@@ -40,7 +40,7 @@ async function hashPassword(password: string, salt: string) {
   const result = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: bytes, iterations: 210_000, hash: 'SHA-256' }, key, 256)
   return hex(new Uint8Array(result))
 }
-function publicUser(account: Account): AuthUser { return { id: account.id, name: account.name, email: account.email, demo: false } }
+function publicUser(account: Account): AuthUser { return { id: account.id, name: account.name, email: account.email, demo: false, ...(account.passwordChangeRequired ? { passwordChangeRequired: true } : {}), ...(account.credentialVersion ? { credentialVersion: account.credentialVersion } : {}) } }
 export async function registerAccount(input: { name: string; email: string; password: string }): Promise<AuthUser> {
   const name = input.name.trim()
   const email = normalizeEmail(input.email)
@@ -59,9 +59,9 @@ export async function registerAccount(input: { name: string; email: string; pass
 }
 export async function loginAccount(emailInput: string, password: string): Promise<AuthUser> {
   const email = normalizeEmail(emailInput)
-  if (!isValidEmail(email)) throw new AuthError('invalidEmail')
-  const account = readAccounts().find(account => account.email === email)
-  if (!account || password.length > 72) throw new AuthError('invalidCredentials')
+  if (!isValidEmail(email) && !/^(\+63\d{10}|09\d{9})$/.test(email)) throw new AuthError('invalidEmail')
+  const account = readAccounts().find(account => account.email === email || account.phone === email)
+  if (!account || account.enabled === false || password.length > 72) throw new AuthError('invalidCredentials')
   const actual = await hashPassword(password, account.salt)
   let difference = 0
   for (let i = 0; i < actual.length; i++) difference |= actual.charCodeAt(i) ^ account.passwordHash.charCodeAt(i)
@@ -90,7 +90,7 @@ export function readSession(): AuthSession | null {
     const user = session?.user
     if (!user || !Number.isFinite(session.expiresAt) || session.expiresAt <= Date.now() || session.expiresAt > Date.now() + 7 * 24 * 60 * 60 * 1000 || typeof user.id !== 'string' || typeof user.name !== 'string' || typeof user.email !== 'string' || typeof user.demo !== 'boolean') return null
     if (user.demo) return user.id === demoUser.id && user.name === demoUser.name && user.email === demoUser.email ? session : null
-    const account = readAccounts().find(account => account.id === user.id && account.email === user.email && account.name === user.name)
+    const account = readAccounts().find(account => account.id === user.id && account.email === user.email && account.name === user.name && account.enabled !== false && (account.credentialVersion ?? 0) === (user.credentialVersion ?? 0))
     return account ? { ...session, user: publicUser(account) } : null
   } catch { return null }
 }
@@ -100,4 +100,29 @@ export function clearSession() {
     try { globalThis[storage].removeItem(key) } catch { failed = true }
   }
   if (failed) throw new AuthError('storageUnavailable')
+}
+
+// Called by the scoped organization workflow after it validates the actor's rights.
+export function accountExists(email: string) { return readAccounts().some(a => a.email === normalizeEmail(email)) }
+export function updateManagedAccount(email: string, input: { name?: string; email?: string; phone?: string; enabled?: boolean }) {
+  const accounts = readAccounts(), account = accounts.find(a => a.email === normalizeEmail(email))
+  if (!account) throw new AuthError('invalidCredentials')
+  if (input.email && (!isValidEmail(input.email) || accounts.some(a => a.id !== account.id && a.email === input.email))) throw new AuthError('emailTaken')
+  if (input.phone && accounts.some(a => a.id !== account.id && a.phone === input.phone)) throw new AuthError('emailTaken')
+  localStorage.setItem(authStorageKeys.accounts, JSON.stringify(accounts.map(a => a.id === account.id ? { ...a, ...input } : a)))
+}
+export async function resetManagedPassword(email: string, password: string, forceChange = true) {
+  if (!isValidPassword(password)) throw new AuthError('invalidPassword')
+  const account = readAccounts().find(a => a.email === normalizeEmail(email))
+  if (!account) throw new AuthError('invalidCredentials')
+  const salt = hex(crypto.getRandomValues(new Uint8Array(16)))
+  const passwordHash = await hashPassword(password, salt)
+  const updated = { ...account, salt, passwordHash, passwordChangeRequired: forceChange, credentialVersion: (account.credentialVersion ?? 0) + 1 }
+  localStorage.setItem(authStorageKeys.accounts, JSON.stringify(readAccounts().map(a => a.id === account.id ? updated : a)))
+  return publicUser(updated)
+}
+export async function changeOwnPassword(user: AuthUser, currentPassword: string, password: string) {
+  if (currentPassword === password) throw new AuthError('invalidPassword')
+  await loginAccount(user.email, currentPassword)
+  return resetManagedPassword(user.email, password, false)
 }

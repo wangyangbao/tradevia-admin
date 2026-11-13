@@ -13,6 +13,7 @@ import { AuthError, isValidEmail, isValidPassword, normalizeEmail } from '@/lib/
 import { authEn, authZh } from '@/lib/auth-i18n'
 import type { AuthTextKey } from '@/lib/auth-i18n'
 import '@/styles/auth.css'
+import { demoAccounts } from '@/lib/organization'
 
 type Field = 'name' | 'email' | 'password' | 'confirm'
 const copyrightYear = new Date().getFullYear()
@@ -47,7 +48,7 @@ export function AuthPage({ page }: { page: 'login' | 'register' }) {
     if (submitting.current) return
     const next: Partial<Record<Field, AuthTextKey>> = {}
     if (registering && (!values.name.trim() || values.name.trim().length > 40)) next.name = 'invalidName'
-    if (!isValidEmail(normalizeEmail(values.email))) next.email = 'invalidEmail'
+    if (!isValidEmail(normalizeEmail(values.email)) && (registering || !/^(\+63\d{10}|09\d{9})$/.test(values.email))) next.email = 'invalidEmail'
     if (registering ? !isValidPassword(values.password) : !values.password) next.password = registering ? 'invalidPassword' : 'required'
     if (registering && (!values.confirm || values.password !== values.confirm)) next.confirm = 'passwordMismatch'
     setErrors(next); setError(null)
@@ -61,9 +62,10 @@ export function AuthPage({ page }: { page: 'login' | 'register' }) {
     } catch (caught) { reportError(caught) }
     finally { submitting.current = false; setBusy(false) }
   }
-  const demo = () => {
+  const demo = async () => {
     if (submitting.current) return
-    try { enterDemo() } catch (caught) { reportError(caught) }
+    setBusy(true)
+    try { await enterDemo(); location.hash = 'businessUnits' } catch (caught) { reportError(caught) } finally { setBusy(false) }
   }
   const fieldError = (field: Field) => errors[field] ? <p role="alert" className="auth-field-error" id={`auth-${field}-error`}>{a(errors[field]!)}</p> : null
   const navigate = (event: React.MouseEvent<HTMLAnchorElement>) => {
@@ -94,7 +96,7 @@ export function AuthPage({ page }: { page: 'login' | 'register' }) {
           <form onSubmit={submit} noValidate aria-busy={busy}>
             <fieldset disabled={busy} className="auth-fields">
               {registering && <div className="auth-field"><Label htmlFor="auth-name">{a('name')}</Label><Input id="auth-name" name="name" autoComplete="name" maxLength={40} placeholder={a('namePlaceholder')} value={values.name} onChange={e => update('name', e.target.value)} aria-invalid={!!errors.name} aria-describedby={errors.name ? 'auth-name-error' : undefined} required />{fieldError('name')}</div>}
-              <div className="auth-field"><Label htmlFor="auth-email">{a('email')}</Label><div className="auth-input-wrap"><Mail size={16} aria-hidden="true" /><Input id="auth-email" name="email" type="email" autoComplete="username" maxLength={254} spellCheck={false} autoCapitalize="none" placeholder={a('emailPlaceholder')} value={values.email} onChange={e => update('email', e.target.value)} aria-invalid={!!errors.email} aria-describedby={errors.email ? 'auth-email-error' : undefined} required /></div>{fieldError('email')}</div>
+              <div className="auth-field"><Label htmlFor="auth-email">{registering ? a('email') : locale === 'zh' ? '登录账号（邮箱 / 手机号）' : 'Email / phone'}</Label><div className="auth-input-wrap"><Mail size={16} aria-hidden="true" /><Input id="auth-email" name="email" type={registering ? 'email' : 'text'} autoComplete="username" maxLength={254} spellCheck={false} autoCapitalize="none" placeholder={a('emailPlaceholder')} value={values.email} onChange={e => update('email', e.target.value)} aria-invalid={!!errors.email} aria-describedby={errors.email ? 'auth-email-error' : undefined} required /></div>{fieldError('email')}</div>
               <div className="auth-field"><Label htmlFor="auth-password">{a('password')}</Label><div className="auth-input-wrap auth-password-wrap"><Input id="auth-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete={registering ? 'new-password' : 'current-password'} maxLength={72} placeholder={a(registering ? 'newPasswordPlaceholder' : 'passwordPlaceholder')} value={values.password} onChange={e => update('password', e.target.value)} aria-invalid={!!errors.password} aria-describedby={errors.password ? 'auth-password-error' : registering ? 'auth-password-hint' : undefined} required /><button type="button" className="auth-reveal" aria-label={a(showPassword ? 'hidePassword' : 'showPassword')} aria-pressed={showPassword} onClick={() => setShowPassword(value => !value)}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></div>{fieldError('password')}{registering && !errors.password && <p className="auth-field-hint" id="auth-password-hint">{a('passwordHint')}</p>}</div>
               {registering && <div className="auth-field"><Label htmlFor="auth-confirm">{a('confirmPassword')}</Label><div className="auth-input-wrap auth-password-wrap"><Input id="auth-confirm" name="confirmPassword" type={showConfirm ? 'text' : 'password'} autoComplete="new-password" maxLength={72} placeholder={a('confirmPlaceholder')} value={values.confirm} onChange={e => update('confirm', e.target.value)} aria-invalid={!!errors.confirm} aria-describedby={errors.confirm ? 'auth-confirm-error' : undefined} required /><button type="button" className="auth-reveal" aria-label={`${a(showConfirm ? 'hidePassword' : 'showPassword')} · ${a('confirmPassword')}`} aria-pressed={showConfirm} onClick={() => setShowConfirm(value => !value)}>{showConfirm ? <EyeOff size={17} /> : <Eye size={17} />}</button></div>{fieldError('confirm')}{values.confirm && values.confirm === values.password && !errors.confirm && <p className="auth-field-success"><Check size={12} />{a('passwordMatch')}</p>}</div>}
               {!registering && <label className="auth-remember"><input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} /><span>{a('remember')}</span></label>}
@@ -105,7 +107,7 @@ export function AuthPage({ page }: { page: 'login' | 'register' }) {
           <p className="auth-switch">{a(registering ? 'hasAccount' : 'noAccount')}<a href={registering ? '#login' : '#register'} onClick={navigate}>{a(registering ? 'loginLink' : 'registerLink')}<ArrowRight size={12} /></a></p>
           <div className="auth-demo-divider"><span>{a('demoDivider')}</span></div>
           <Button type="button" variant="outline" className="auth-demo-button" onClick={demo} disabled={busy}><Store size={16} />{a('demoAction')}<ArrowRight size={14} /></Button>
-          <p className="auth-demo-note"><ShieldCheck size={15} /><span>{a('demoNote')}</span></p>
+          {!registering && <div className="org-demo-accounts"><p>{locale === 'zh' ? '选择层级账号体验 · 初始密码 Demo123456' : 'Demo accounts · Initial password Demo123456'}</p><div>{demoAccounts.map((account, i) => <button type="button" key={account.email} disabled={busy} onClick={() => { setValues(v => ({ ...v, email: account.email, password: 'Demo123456' })); setError(null); setErrors({}); location.hash = 'login' }}>{locale === 'zh' ? account.name : ['Head office', 'Division', 'Region', 'Distributor'][i]}</button>)}</div></div>}<p className="auth-demo-note"><ShieldCheck size={15} /><span>{a('demoNote')}</span></p>
         </div>
       </main>
       <footer className="auth-bottom"><span>© {copyrightYear} {companyName}</span><span>{a('rights')}</span></footer>
